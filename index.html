@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Mes Essentiels — vêtements et accessoires africains élégants pour femme, homme et enfant." />
+  <title>Mes Essentiels — L'élégance africaine au quotidien</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="topbar"><span>🚚 Livraison rapide</span><span>✦ Qualité premium</span><span>🔒 Paiement sécurisé</span></div>
+  <header class="header">
+    <a class="brand" href="#accueil"><span class="monogram">ME</span><span><b>MES ESSENTIELS</b><small>L’élégance africaine au quotidien</small></span></a>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu">☰</button>
+    <nav id="nav">
+      <a href="#accueil">Accueil</a><a href="#boutique">Boutique</a><a href="#femme">Femme</a><a href="#homme">Homme</a><a href="#enfant">Enfant</a><a href="#accessoires">Accessoires</a>
+    </nav>
+    <div class="actions"><button id="searchBtn" title="Rechercher">⌕</button><button id="cartBtn" class="cart-btn">🛍️ <span id="cartCount">0</span></button></div>
+  </header>
+
+  <main>
+    <section class="hero" id="accueil">
+      <div class="hero-copy">
+        <p class="eyebrow">NOUVELLE COLLECTION</p>
+        <h1>L’élégance <span>africaine</span><br>au quotidien</h1>
+        <p>Des pièces inspirées du wax, du bazin et des coupes contemporaines, pensées pour célébrer votre style.</p>
+        <div class="hero-buttons"><a class="btn gold" href="#boutique">Découvrir la collection</a><a class="btn ghost" href="#categories">Nos catégories</a></div>
+      </div>
+      <div class="hero-media"><img src="assets/hero.jpg" alt="Mode africaine élégante"><div class="badge">Collection 2026</div></div>
+    </section>
+
+    <section class="section" id="categories">
+      <div class="section-head"><div><p class="eyebrow dark">POUR TOUS LES STYLES</p><h2>Nos catégories</h2></div><p>Explorez nos sélections pour femme, homme, enfant et accessoires.</p></div>
+      <div class="categories">
+        <a class="category" href="#boutique" data-filter="femme"><img src="assets/femme.jpg" alt="Femme"><div><h3>Femme</h3><span>Robes, ensembles, boubous</span></div></a>
+        <a class="category" href="#boutique" data-filter="homme"><img src="assets/homme.jpg" alt="Homme"><div><h3>Homme</h3><span>Chemises, boubous, ensembles</span></div></a>
+        <a class="category" href="#boutique" data-filter="enfant"><img src="assets/enfant.jpg" alt="Enfant"><div><h3>Enfant</h3><span>Tenues colorées et confortables</span></div></a>
+        <a class="category" href="#boutique" data-filter="accessoires"><img src="assets/accessoires.jpg" alt="Accessoires"><div><h3>Accessoires</h3><span>Sacs, bijoux et chaussures</span></div></a>
+      </div>
+    </section>
+
+    <section class="section shop" id="boutique">
+      <div class="section-head"><div><p class="eyebrow dark">LA BOUTIQUE</p><h2>Nos nouveautés</h2></div><p>Choisissez une taille puis ajoutez votre article au panier.</p></div>
+      <div class="shop-tools">
+        <div class="filters" id="filters"><button class="active" data-filter="all">Tout</button><button data-filter="femme">Femme</button><button data-filter="homme">Homme</button><button data-filter="enfant">Enfant</button><button data-filter="accessoires">Accessoires</button></div>
+        <input id="searchInput" type="search" placeholder="Rechercher un produit…" />
+      </div>
+      <div class="products" id="productGrid"></div>
+    </section>
+
+    <section class="benefits">
+      <div><b>🚚 Livraison rapide</b><span>France & international</span></div>
+      <div><b>🔒 Paiement sécurisé</b><span>Carte, PayPal, Apple Pay*</span></div>
+      <div><b>✦ Qualité premium</b><span>Tissus sélectionnés</span></div>
+      <div><b>↩ Retours faciles</b><span>Politique à personnaliser</span></div>
+    </section>
+
+    <section class="newsletter"><div><p class="eyebrow dark">RESTEZ INFORMÉ</p><h2>Recevez nos offres exclusives</h2><p>Inscrivez-vous pour découvrir les nouveautés et promotions.</p></div><form id="newsletterForm"><input type="email" placeholder="Votre adresse e-mail" required><button class="btn gold">S’inscrire</button></form></section>
+  </main>
+
+  <footer><div class="footer-grid"><div><span class="monogram footer-logo">ME</span><h3>Mes Essentiels</h3><p>L’élégance africaine au quotidien.</p></div><div><h4>Boutique</h4><a href="#boutique">Nouveautés</a><a href="#femme">Femme</a><a href="#homme">Homme</a><a href="#accessoires">Accessoires</a></div><div><h4>Informations</h4><a href="#">Livraison & retours</a><a href="#">CGV</a><a href="#">Confidentialité</a><a href="#">FAQ</a><a href="admin.html">Administration</a></div><div><h4>Contact</h4><p>contact@mesessentiels.com</p><p>WhatsApp : à personnaliser</p><p>France</p></div></div><div class="copyright">© 2026 Mes Essentiels — Démo e-commerce.</div></footer>
+
+  <aside class="cart" id="cart" aria-hidden="true"><div class="cart-header"><h2>Votre panier</h2><button id="closeCart">✕</button></div><div id="cartItems" class="cart-items"></div><div class="cart-footer"><div class="total"><span>Total</span><strong id="cartTotal">0,00 €</strong></div><button class="btn gold full" id="orderBtn">Commander sur WhatsApp</button><button class="btn ghost full dark-text" id="clearCart">Vider le panier</button><small>Paiement à la livraison actif. Stripe et WhatsApp s’activent via la configuration du serveur.</small></div></aside>
+  <div class="overlay" id="overlay"></div>
+  <div class="toast" id="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
