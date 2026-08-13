@@ -44,7 +44,6 @@ async function handleProductImage(file){
   }
 }
 $('#productImageLibrary').addEventListener('change',e=>handleProductImage(e.target.files?.[0]));
-$('#productImageCamera').addEventListener('change',e=>handleProductImage(e.target.files?.[0]));
 const priceInput=$('#productPrice');
 function updatePricePreview(){const n=Math.max(0,Number(priceInput?.value||0));const el=$('#pricePreview');if(el)el.textContent='Prix affiché : '+money(n)}
 priceInput?.addEventListener('input',updatePricePreview);updatePricePreview();
@@ -78,7 +77,7 @@ $('#productForm').onsubmit=async e=>{
     productImageData='';
     $('#productImagePreview').src='';
     $('#productImagePreview').classList.remove('show');
-    $('#imageHelp').textContent='Choisis une image déjà enregistrée dans ton iPhone ou prends une nouvelle photo.';
+    $('#imageHelp').textContent='Choisis une image déjà enregistrée dans ton iPhone.';
     loadProducts();
   }catch(err){
     msg.classList.add('err');
