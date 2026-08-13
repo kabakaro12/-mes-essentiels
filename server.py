@@ -7,17 +7,17 @@ ROOT = Path(__file__).resolve().parent
 DB = Path(os.environ.get('DB_PATH', str(ROOT / 'mes_essentiels.db')))
 ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'admin@mesessentiels.com').lower()
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'ChangeMe2026!')
-WHATSAPP_NUMBER = os.environ.get('WHATSAPP_NUMBER', '')
+WHATSAPP_NUMBER = os.environ.get('WHATSAPP_NUMBER', '224621353257')
 STRIPE_PAYMENT_LINK = os.environ.get('STRIPE_PAYMENT_LINK', '')
 
 PRODUCTS = [
- (1,'Robe longue wax élégante',59.90,'femme','assets/prod1.jpg','S,M,L,XL',8,'Robe longue en wax, coupe élégante et confortable.'),
- (2,'Ensemble traditionnel homme',69.90,'homme','assets/prod2.jpg','M,L,XL,XXL',7,'Ensemble traditionnel brodé pour homme.'),
- (3,'Boubou en bazin premium',89.90,'femme','assets/prod3.jpg','S,M,L,XL',5,'Boubou en bazin premium pour cérémonies et occasions.'),
- (4,'Ensemble brodé cérémonie',64.90,'homme','assets/prod4.jpg','S,M,L,XL',6,'Ensemble homme brodé, finition cérémonie.'),
- (5,'Robe courte wax colorée',39.90,'femme','assets/prod5.jpg','S,M,L,XL',12,'Robe courte colorée en tissu wax.'),
- (6,'Tenue enfant wax',29.90,'enfant','assets/enfant.jpg','4A,6A,8A,10A',10,'Tenue wax confortable pour enfant.'),
- (7,'Sac inspiration africaine',44.90,'accessoires','assets/accessoires.jpg','Unique',9,'Sac élégant aux inspirations africaines.')
+ (1,'Robe longue wax élégante',550000,'femme','assets/prod1.jpg','S,M,L,XL',8,'Robe longue en wax, coupe élégante et confortable.'),
+ (2,'Ensemble traditionnel homme',650000,'homme','assets/prod2.jpg','M,L,XL,XXL',7,'Ensemble traditionnel brodé pour homme.'),
+ (3,'Boubou en bazin premium',850000,'femme','assets/prod3.jpg','S,M,L,XL',5,'Boubou en bazin premium pour cérémonies et occasions.'),
+ (4,'Ensemble brodé cérémonie',600000,'homme','assets/prod4.jpg','S,M,L,XL',6,'Ensemble homme brodé, finition cérémonie.'),
+ (5,'Robe courte wax colorée',350000,'femme','assets/prod5.jpg','S,M,L,XL',12,'Robe courte colorée en tissu wax.'),
+ (6,'Tenue enfant wax',300000,'enfant','assets/enfant.jpg','4A,6A,8A,10A',10,'Tenue wax confortable pour enfant.'),
+ (7,'Sac inspiration africaine',400000,'accessoires','assets/accessoires.jpg','Unique',9,'Sac élégant aux inspirations africaines.')
 ]
 
 def db():
@@ -45,6 +45,9 @@ def init_db():
     ''')
     for p in PRODUCTS:
         cur.execute('INSERT OR IGNORE INTO products(id,name,price,category,image,sizes,stock,description) VALUES(?,?,?,?,?,?,?,?)',p)
+    # Migration automatique des anciens prix de démonstration en euros vers les prix FG.
+    for p in PRODUCTS:
+        cur.execute('UPDATE products SET price=? WHERE id=? AND price < 10000',(p[2],p[0]))
     row=cur.execute('SELECT id FROM users WHERE email=?',(ADMIN_EMAIL,)).fetchone()
     if not row:
         cur.execute('INSERT INTO users(name,email,password,role) VALUES(?,?,?,?)',('Administration',ADMIN_EMAIL,hash_password(ADMIN_PASSWORD),'admin'))
@@ -98,6 +101,9 @@ class Handler(SimpleHTTPRequestHandler):
         if path=='/api/logout':
             token=self.headers.get('Authorization','').replace('Bearer ','').strip(); con=db(); con.execute('DELETE FROM sessions WHERE token=?',(token,)); con.commit(); con.close(); return self.send_json({'ok':True})
         if path=='/api/orders':
+            u=self.auth()
+            if not u or u.get('role') not in ('customer','admin'):
+                return self.send_json({'error':'Vous devez créer un compte client et vous connecter avant de commander.'},401)
             items=b.get('items') or []; fields=['customer_name','email','phone','address','city','postal_code','payment_method']
             if not items or any(not str(b.get(f,'')).strip() for f in fields): return self.send_json({'error':'Informations de livraison et panier requis.'},400)
             con=db(); total=0; prepared=[]
@@ -109,7 +115,7 @@ class Handler(SimpleHTTPRequestHandler):
                     if p['stock']<qty: raise ValueError(f"Stock insuffisant pour {p['name']}.")
                     if size not in p['sizes'].split(','): raise ValueError(f"Taille invalide pour {p['name']}.")
                     total += p['price']*qty; prepared.append((p,qty,size))
-                u=self.auth(); cur=con.execute('INSERT INTO orders(user_id,customer_name,email,phone,address,city,postal_code,payment_method,total) VALUES(?,?,?,?,?,?,?,?,?)',((u or {}).get('id'),*[str(b[f]).strip() for f in fields],round(total,2))); oid=cur.lastrowid
+                cur=con.execute('INSERT INTO orders(user_id,customer_name,email,phone,address,city,postal_code,payment_method,total) VALUES(?,?,?,?,?,?,?,?,?)',(u['id'],*[str(b[f]).strip() for f in fields],round(total,2))); oid=cur.lastrowid
                 for p,qty,size in prepared:
                     con.execute('INSERT INTO order_items(order_id,product_id,name,size,qty,unit_price) VALUES(?,?,?,?,?,?)',(oid,p['id'],p['name'],size,qty,p['price'])); con.execute('UPDATE products SET stock=stock-? WHERE id=?',(qty,p['id']))
                 con.commit();

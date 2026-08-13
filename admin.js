@@ -1,5 +1,5 @@
 const API='/api'; let token=localStorage.getItem('mesEssentielsAdminToken')||'';
-const $=s=>document.querySelector(s); const money=n=>Number(n).toLocaleString('fr-FR',{style:'currency',currency:'EUR'});
+const $=s=>document.querySelector(s); const money=n=>`${Math.round(Number(n)||0).toLocaleString('fr-FR')} FG`;
 async function req(path,opt={}){opt.headers={...(opt.headers||{}),'Content-Type':'application/json',Authorization:`Bearer ${token}`};const r=await fetch(API+path,opt);const j=await r.json();if(!r.ok)throw Error(j.error||'Erreur');return j}
 function showDash(){ $('#loginPanel').classList.add('hidden');$('#dashboard').classList.remove('hidden');loadProducts();loadOrders();}
 $('#adminLogin').onsubmit=async e=>{e.preventDefault();try{const r=await fetch(API+'/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:$('#aEmail').value,password:$('#aPassword').value})});const j=await r.json();if(!r.ok||j.user.role!=='admin')throw Error('Accès administrateur refusé.');token=j.token;localStorage.setItem('mesEssentielsAdminToken',token);showDash()}catch(err){$('#loginMsg').textContent=err.message}};
