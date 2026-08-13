@@ -120,6 +120,16 @@ class Handler(SimpleHTTPRequestHandler):
    con=db();r=con.execute("SELECT id FROM users WHERE id=? AND role='customer'",(cid,)).fetchone()
    if not r:con.close();return self.send_json({'error':'Client introuvable'},404)
    con.execute('UPDATE users SET password=? WHERE id=?',(hash_password(new),cid));con.execute('DELETE FROM sessions WHERE user_id=?',(cid,));con.commit();con.close();return self.send_json({'ok':True})
+  if p=='/api/admin/products':
+   if not self.auth(True):return self.send_json({'error':'Non autorisé'},401)
+   name=str(b.get('name','')).strip();category=str(b.get('category','femme')).strip().lower();image=str(b.get('image','')).strip();sizes=str(b.get('sizes','S,M,L,XL')).strip();description=str(b.get('description','')).strip()
+   try:price=float(b.get('price',0));stock=max(0,int(b.get('stock',0)))
+   except:return self.send_json({'error':'Prix ou stock invalide.'},400)
+   if not name or price<=0:return self.send_json({'error':'Nom et prix valides requis.'},400)
+   if category not in ('femme','homme','enfant','accessoires'):return self.send_json({'error':'Catégorie invalide.'},400)
+   if not image:return self.send_json({'error':'Veuillez choisir une photo.'},400)
+   if image.startswith('data:image/') and len(image)>2500000:return self.send_json({'error':'Image trop volumineuse.'},400)
+   con=db();cur=con.execute('INSERT INTO products(name,price,category,image,sizes,stock,description,active) VALUES(?,?,?,?,?,?,?,1)',(name,price,category,image,sizes,stock,description));con.commit();pid=cur.lastrowid;con.close();return self.send_json({'ok':True,'id':pid},201)
   if p=='/api/orders':
    u=self.auth();items=b.get('items') or []
    if not u:return self.send_json({'error':'Compte client obligatoire pour commander.'},401)
