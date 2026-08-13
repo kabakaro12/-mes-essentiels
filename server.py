@@ -50,6 +50,8 @@ def init_db():
  """)
  cols=[r['name'] for r in cur.execute('PRAGMA table_info(users)').fetchall()]
  if 'phone' not in cols:cur.execute('ALTER TABLE users ADD COLUMN phone TEXT')
+ order_cols=[r['name'] for r in cur.execute('PRAGMA table_info(orders)').fetchall()]
+ if 'payment_status' not in order_cols:cur.execute("ALTER TABLE orders ADD COLUMN payment_status TEXT NOT NULL DEFAULT 'non payé'")
  cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_phone_unique ON users(phone) WHERE phone IS NOT NULL AND phone<>''")
  for p in PRODUCTS:
   cur.execute('INSERT OR IGNORE INTO products(id,name,price,category,image,sizes,stock,description) VALUES(?,?,?,?,?,?,?,?)',p);cur.execute('UPDATE products SET price=? WHERE id=? AND price<10000',(p[2],p[0]))
@@ -156,7 +158,17 @@ class Handler(SimpleHTTPRequestHandler):
    pid=int(p.rsplit('/',1)[1]);fields={k:b[k] for k in ['name','price','category','image','sizes','stock','description','active'] if k in b};con=db();con.execute('UPDATE products SET '+','.join(f'{k}=?' for k in fields)+' WHERE id=?',list(fields.values())+[pid]);con.commit();con.close();return self.send_json({'ok':True})
   if p.startswith('/api/admin/orders/'):
    if not self.auth(True):return self.send_json({'error':'Non autorisé'},401)
-   oid=int(p.rsplit('/',1)[1]);status=str(b.get('status',''));con=db();con.execute('UPDATE orders SET status=? WHERE id=?',(status,oid));con.commit();con.close();return self.send_json({'ok':True})
+   oid=int(p.rsplit('/',1)[1]);fields={}
+   if 'status' in b:
+    status=str(b.get('status',''))
+    if status not in ('nouvelle','confirmée','préparation','expédiée','livrée','annulée'):return self.send_json({'error':'Statut de commande invalide.'},400)
+    fields['status']=status
+   if 'payment_status' in b:
+    payment_status=str(b.get('payment_status',''))
+    if payment_status not in ('non payé','payé','remboursé'):return self.send_json({'error':'Statut de paiement invalide.'},400)
+    fields['payment_status']=payment_status
+   if not fields:return self.send_json({'error':'Aucune modification.'},400)
+   con=db();con.execute('UPDATE orders SET '+','.join(f'{k}=?' for k in fields)+' WHERE id=?',list(fields.values())+[oid]);con.commit();con.close();return self.send_json({'ok':True})
   return self.send_json({'error':'Route introuvable'},404)
 
 if __name__=='__main__':
