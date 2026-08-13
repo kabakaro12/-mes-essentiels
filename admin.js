@@ -29,12 +29,65 @@ function compressImage(file){return new Promise((resolve,reject)=>{
   };
   reader.readAsDataURL(file);
 })}
-$('#productImage').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;$('#imageHelp').textContent='Préparation et compression de la photo…';try{productImageData=await compressImage(file);const preview=$('#productImagePreview');preview.src=productImageData;preview.classList.add('show');$('#imageHelp').textContent='✅ Photo prête. Tu peux ajouter le produit.'}catch(err){$('#imageHelp').textContent=err.message||'Impossible de lire cette photo.';productImageData=''}});
+async function handleProductImage(file){
+  if(!file)return;
+  $('#imageHelp').textContent='Préparation et compression de la photo…';
+  try{
+    productImageData=await compressImage(file);
+    const preview=$('#productImagePreview');
+    preview.src=productImageData;
+    preview.classList.add('show');
+    $('#imageHelp').textContent='✅ Photo prête. Tu peux ajouter le produit.';
+  }catch(err){
+    $('#imageHelp').textContent=err.message||'Impossible de lire cette photo.';
+    productImageData='';
+  }
+}
+$('#productImageLibrary').addEventListener('change',e=>handleProductImage(e.target.files?.[0]));
+$('#productImageCamera').addEventListener('change',e=>handleProductImage(e.target.files?.[0]));
 const priceInput=$('#productPrice');
 function updatePricePreview(){const n=Math.max(0,Number(priceInput?.value||0));const el=$('#pricePreview');if(el)el.textContent='Prix affiché : '+money(n)}
 priceInput?.addEventListener('input',updatePricePreview);updatePricePreview();
 
-$('#productForm').onsubmit=async e=>{e.preventDefault();const msg=$('#productMsg');msg.className='admin-msg';msg.textContent='';if(!productImageData){msg.classList.add('err');msg.textContent='Choisis une photo avant d’ajouter le produit.';return}const d=Object.fromEntries(new FormData(e.currentTarget));d.price=+d.price;d.stock=+d.stock;d.image=productImageData;const btn=$('#addProductBtn');btn.disabled=true;btn.textContent='Ajout en cours…';try{await req('/admin/products',{method:'POST',body:JSON.stringify(d)});msg.classList.add('ok');msg.textContent='✅ Produit ajouté avec sa photo.';e.currentTarget.reset();updatePricePreview();e.currentTarget.querySelector('[name="sizes"]').value='S,M,L,XL';e.currentTarget.querySelector('[name="stock"]').value='5';productImageData='';$('#productImagePreview').src='';$('#productImagePreview').classList.remove('show');$('#imageHelp').textContent='Choisis une photo dans ton iPhone ou prends-en une avec l’appareil photo.';loadProducts()}catch(err){msg.classList.add('err');msg.textContent=err.message}finally{btn.disabled=false;btn.textContent='Ajouter le produit'}};
+$('#productForm').onsubmit=async e=>{
+  e.preventDefault();
+  const form=e.currentTarget;
+  const msg=$('#productMsg');
+  msg.className='admin-msg';
+  msg.textContent='';
+  if(!productImageData){
+    msg.classList.add('err');
+    msg.textContent='Choisis une photo avant d’ajouter le produit.';
+    return;
+  }
+  const d=Object.fromEntries(new FormData(form));
+  d.price=+d.price;
+  d.stock=+d.stock;
+  d.image=productImageData;
+  const btn=$('#addProductBtn');
+  btn.disabled=true;
+  btn.textContent='Ajout en cours…';
+  try{
+    await req('/admin/products',{method:'POST',body:JSON.stringify(d)});
+    msg.classList.add('ok');
+    msg.textContent='✅ Produit ajouté avec sa photo.';
+    form.reset();
+    updatePricePreview();
+    form.querySelector('[name="sizes"]').value='S,M,L,XL';
+    form.querySelector('[name="stock"]').value='5';
+    productImageData='';
+    $('#productImagePreview').src='';
+    $('#productImagePreview').classList.remove('show');
+    $('#imageHelp').textContent='Choisis une image déjà enregistrée dans ton iPhone ou prends une nouvelle photo.';
+    loadProducts();
+  }catch(err){
+    msg.classList.add('err');
+    msg.textContent=err.message||'Impossible d’ajouter le produit.';
+  }finally{
+    btn.disabled=false;
+    btn.textContent='Ajouter le produit';
+  }
+};
 
 async function loadProducts(){try{
   const ps=await req('/admin/products');
