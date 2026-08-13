@@ -113,15 +113,6 @@ class Handler(SimpleHTTPRequestHandler):
    if len(new)<6:return self.send_json({'error':'Le nouveau mot de passe doit contenir au moins 6 caractères.'},400)
    if not verify_password(cur,u['password']):return self.send_json({'error':'Mot de passe actuel incorrect.'},400)
    con=db();con.execute('UPDATE users SET password=? WHERE id=?',(hash_password(new),u['id']));con.commit();con.close();return self.send_json({'ok':True})
-  if p.startswith('/api/admin/customers/') and p.endswith('/password'):
-   if not self.auth(True):return self.send_json({'error':'Non autorisé'},401)
-   try:cid=int(p.split('/')[4])
-   except:return self.send_json({'error':'Client invalide'},400)
-   new=str(b.get('password',''))
-   if len(new)<6:return self.send_json({'error':'6 caractères minimum.'},400)
-   con=db();r=con.execute("SELECT id FROM users WHERE id=? AND role='customer'",(cid,)).fetchone()
-   if not r:con.close();return self.send_json({'error':'Client introuvable'},404)
-   con.execute('UPDATE users SET password=? WHERE id=?',(hash_password(new),cid));con.execute('DELETE FROM sessions WHERE user_id=?',(cid,));con.commit();con.close();return self.send_json({'ok':True})
   if p=='/api/admin/products':
    if not self.auth(True):return self.send_json({'error':'Non autorisé'},401)
    name=str(b.get('name','')).strip();category=str(b.get('category','femme')).strip().lower();image=str(b.get('image','')).strip();sizes=str(b.get('sizes','S,M,L,XL')).strip();description=str(b.get('description','')).strip()
@@ -155,7 +146,17 @@ class Handler(SimpleHTTPRequestHandler):
   p=urlparse(self.path).path;b=self.body()
   if p.startswith('/api/admin/products/'):
    if not self.auth(True):return self.send_json({'error':'Non autorisé'},401)
-   pid=int(p.rsplit('/',1)[1]);fields={k:b[k] for k in ['name','price','category','image','sizes','stock','description','active'] if k in b};con=db();con.execute('UPDATE products SET '+','.join(f'{k}=?' for k in fields)+' WHERE id=?',list(fields.values())+[pid]);con.commit();con.close();return self.send_json({'ok':True})
+   pid=int(p.rsplit('/',1)[1]);fields={k:b[k] for k in ['name','price','category','image','sizes','stock','description','active'] if k in b}
+   if not fields:return self.send_json({'error':'Aucune modification.'},400)
+   if 'price' in fields:
+    try:fields['price']=float(fields['price'])
+    except:return self.send_json({'error':'Prix invalide.'},400)
+   if 'stock' in fields:
+    try:fields['stock']=max(0,int(fields['stock']))
+    except:return self.send_json({'error':'Stock invalide.'},400)
+   con=db();row=con.execute('SELECT id FROM products WHERE id=?',(pid,)).fetchone()
+   if not row:con.close();return self.send_json({'error':'Produit introuvable.'},404)
+   con.execute('UPDATE products SET '+','.join(f'{k}=?' for k in fields)+' WHERE id=?',list(fields.values())+[pid]);con.commit();con.close();return self.send_json({'ok':True})
   if p.startswith('/api/admin/orders/'):
    if not self.auth(True):return self.send_json({'error':'Non autorisé'},401)
    oid=int(p.rsplit('/',1)[1]);fields={}
@@ -169,6 +170,23 @@ class Handler(SimpleHTTPRequestHandler):
     fields['payment_status']=payment_status
    if not fields:return self.send_json({'error':'Aucune modification.'},400)
    con=db();con.execute('UPDATE orders SET '+','.join(f'{k}=?' for k in fields)+' WHERE id=?',list(fields.values())+[oid]);con.commit();con.close();return self.send_json({'ok':True})
+  return self.send_json({'error':'Route introuvable'},404)
+
+
+ def do_DELETE(self):
+  p=urlparse(self.path).path
+  if p.startswith('/api/admin/products/'):
+   if not self.auth(True):return self.send_json({'error':'Non autorisé'},401)
+   try:pid=int(p.rsplit('/',1)[1])
+   except:return self.send_json({'error':'Produit invalide.'},400)
+   con=db();row=con.execute('SELECT id FROM products WHERE id=?',(pid,)).fetchone()
+   if not row:con.close();return self.send_json({'error':'Produit introuvable.'},404)
+   used=con.execute('SELECT 1 FROM order_items WHERE product_id=? LIMIT 1',(pid,)).fetchone()
+   if used:
+    con.execute('UPDATE products SET active=0,stock=0 WHERE id=?',(pid,));con.commit();con.close()
+    return self.send_json({'ok':True,'message':'Produit retiré de la boutique. Il est conservé dans l’historique des commandes.'})
+   con.execute('DELETE FROM products WHERE id=?',(pid,));con.commit();con.close()
+   return self.send_json({'ok':True,'message':'Produit supprimé définitivement.'})
   return self.send_json({'error':'Route introuvable'},404)
 
 if __name__=='__main__':

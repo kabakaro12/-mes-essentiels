@@ -18,9 +18,36 @@
   <p id="imageHelp" class="image-help">Choisis une image déjà enregistrée dans ton iPhone.</p>
 </div><textarea name="description" placeholder="Description"></textarea><button id="addProductBtn" class="btn gold">Ajouter le produit</button><p id="productMsg" class="admin-msg"></p></form></div><div class="panel"><h2>Stock restant</h2><div id="stockSummary" class="stock-summary"></div><h2 style="margin-top:24px">Produits</h2><div id="productsAdmin"></div></div></div></div>
 <div id="ordersTab" class="tab hidden"><div class="panel"><h2>Commandes</h2><p class="image-help">Consulte les articles, change le statut de la commande et suis le paiement.</p><div id="ordersAdmin"></div></div></div>
-<div id="customersTab" class="tab hidden"><div class="panel"><h2>Gestion des clients</h2><div id="customersList" class="admin-list"></div></div></div>
+<div id="customersTab" class="tab hidden"><div class="panel"><h2>Gestion des clients</h2><p class="image-help">L’administrateur peut consulter les comptes clients, mais ne peut pas modifier leurs mots de passe.</p><div id="customersList" class="admin-list"></div></div></div>
 <div id="invoicesTab" class="tab hidden"><div class="panel"><h2>Factures</h2><p class="image-help">Une facture est disponible pour chaque commande. Tu peux l’ouvrir puis l’imprimer ou l’enregistrer en PDF.</p><div id="invoicesAdmin"></div></div></div>
 </section>
-<div class="admin-modal" id="clientPasswordModal" aria-hidden="true"><div class="admin-modal-card"><button class="admin-modal-close" id="closeClientPasswordModal" type="button">✕</button><h3>Modifier le mot de passe</h3><p id="clientPasswordLabel"></p><input type="password" id="newClientPassword" placeholder="Nouveau mot de passe (6 caractères min.)"><button class="btn gold full" id="saveClientPassword" type="button">Enregistrer</button><p class="admin-note">Le mot de passe actuel n’est jamais affiché.</p></div></div>
+
+
+<div class="admin-modal" id="productEditModal" aria-hidden="true">
+  <div class="admin-modal-card order-detail-card">
+    <button class="admin-modal-close" id="closeProductEditModal" type="button">✕</button>
+    <p class="eyebrow dark">PRODUIT</p>
+    <h2>Modifier le produit</h2>
+    <form id="editProductForm" class="admin-form">
+      <input type="hidden" id="editProductId">
+      <input id="editProductName" placeholder="Nom du produit" required>
+      <input id="editProductPrice" type="number" min="1000" step="1000" inputmode="numeric" placeholder="Prix en FG" required>
+      <select id="editProductCategory">
+        <option value="femme">Femme</option>
+        <option value="homme">Homme</option>
+        <option value="enfant">Enfant</option>
+        <option value="accessoires">Accessoires</option>
+      </select>
+      <input id="editProductSizes" placeholder="Tailles : S,M,L,XL">
+      <input id="editProductStock" type="number" min="0" placeholder="Stock">
+      <textarea id="editProductDescription" placeholder="Description"></textarea>
+      <label style="display:flex;gap:10px;align-items:center"><input id="editProductActive" type="checkbox"> Produit actif</label>
+      <button class="btn gold" type="submit">Enregistrer les modifications</button>
+      <button class="btn ghost dark-text" id="deleteProductBtn" type="button">Supprimer le produit</button>
+      <p id="editProductMsg" class="admin-msg"></p>
+    </form>
+  </div>
+</div>
+
 <div class="admin-modal" id="orderDetailModal" aria-hidden="true"><div class="admin-modal-card order-detail-card"><button class="admin-modal-close" id="closeOrderDetailModal" type="button">✕</button><div id="orderDetailContent"></div></div></div>
 </main><script src="admin.js"></script></body></html>

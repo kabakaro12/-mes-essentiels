@@ -88,16 +88,71 @@ $('#productForm').onsubmit=async e=>{
   }
 };
 
+let adminProducts=[];
 async function loadProducts(){try{
-  const ps=await req('/admin/products');
+  const ps=await req('/admin/products');adminProducts=ps;
   const total=ps.reduce((a,p)=>a+(Number(p.stock)||0),0);
   const low=ps.filter(p=>Number(p.stock)<=3).length;
   const out=ps.filter(p=>Number(p.stock)<=0).length;
   const summary=$('#stockSummary');
   if(summary) summary.innerHTML=`<div class="stock-cards"><div><strong>${total}</strong><span>articles restants</span></div><div><strong>${ps.length}</strong><span>produits</span></div><div><strong>${low}</strong><span>stocks faibles ≤ 3</span></div><div><strong>${out}</strong><span>ruptures</span></div></div>`;
-  $('#productsAdmin').innerHTML=`<table class="admin-table"><thead><tr><th>Photo</th><th>Produit</th><th>Prix</th><th>Stock restant</th><th>Actif</th></tr></thead><tbody>${ps.map(p=>`<tr><td><img class="product-thumb" src="${esc(p.image)}" alt=""></td><td>${esc(p.name)}</td><td>${money(p.price)}</td><td><div class="stock-cell"><b class="${Number(p.stock)<=3?'stock-low':''}">${p.stock} restant${Number(p.stock)>1?'s':''}</b><input type="number" min="0" value="${p.stock}" onchange="updateProduct(${p.id},'stock',+this.value)"></div></td><td><input type="checkbox" ${p.active?'checked':''} onchange="updateProduct(${p.id},'active',this.checked?1:0)"></td></tr>`).join('')}</tbody></table>`
+  $('#productsAdmin').innerHTML=`<table class="admin-table"><thead><tr><th>Photo</th><th>Produit</th><th>Prix</th><th>Stock restant</th><th>Actif</th><th>Actions</th></tr></thead><tbody>${ps.map(p=>`<tr><td><img class="product-thumb" src="${esc(p.image)}" alt=""></td><td>${esc(p.name)}</td><td>${money(p.price)}</td><td><div class="stock-cell"><b class="${Number(p.stock)<=3?'stock-low':''}">${p.stock} restant${Number(p.stock)>1?'s':''}</b><input type="number" min="0" value="${p.stock}" onchange="updateProduct(${p.id},'stock',+this.value)"></div></td><td><input type="checkbox" ${p.active?'checked':''} onchange="updateProduct(${p.id},'active',this.checked?1:0)"></td><td><div class="order-actions"><button class="mini-btn gold-mini" onclick="openEditProduct(${p.id})">Modifier</button><button class="mini-btn" onclick="deleteProduct(${p.id},'${esc(p.name).replace(/'/g,"&#39;")}')">Supprimer</button></div></td></tr>`).join('')}</tbody></table>`
 }catch(e){console.error(e)}}
 window.updateProduct=async(id,key,val)=>{await req('/admin/products/'+id,{method:'PUT',body:JSON.stringify({[key]:val})});loadProducts()};
+
+window.openEditProduct=id=>{
+  const p=adminProducts.find(x=>Number(x.id)===Number(id));if(!p)return;
+  $('#editProductId').value=p.id;
+  $('#editProductName').value=p.name||'';
+  $('#editProductPrice').value=Math.round(Number(p.price)||0);
+  $('#editProductCategory').value=p.category||'femme';
+  $('#editProductSizes').value=p.sizes||'';
+  $('#editProductStock').value=Number(p.stock)||0;
+  $('#editProductDescription').value=p.description||'';
+  $('#editProductActive').checked=!!p.active;
+  $('#editProductMsg').textContent='';
+  $('#productEditModal').classList.add('show');
+  $('#productEditModal').setAttribute('aria-hidden','false');
+};
+$('#closeProductEditModal')?.addEventListener('click',()=>{
+  $('#productEditModal').classList.remove('show');
+  $('#productEditModal').setAttribute('aria-hidden','true');
+});
+$('#editProductForm')?.addEventListener('submit',async e=>{
+  e.preventDefault();
+  const id=Number($('#editProductId').value);
+  const body={
+    name:$('#editProductName').value.trim(),
+    price:Number($('#editProductPrice').value),
+    category:$('#editProductCategory').value,
+    sizes:$('#editProductSizes').value.trim(),
+    stock:Number($('#editProductStock').value),
+    description:$('#editProductDescription').value.trim(),
+    active:$('#editProductActive').checked?1:0
+  };
+  const msg=$('#editProductMsg');msg.textContent='';
+  try{
+    await req('/admin/products/'+id,{method:'PUT',body:JSON.stringify(body)});
+    msg.className='admin-msg ok';msg.textContent='✅ Produit modifié.';
+    await loadProducts();
+    setTimeout(()=>$('#productEditModal').classList.remove('show'),500);
+  }catch(err){msg.className='admin-msg err';msg.textContent=err.message||'Impossible de modifier le produit.'}
+});
+window.deleteProduct=async(id,name='ce produit')=>{
+  if(!confirm(`Supprimer ${name} ?`))return;
+  try{
+    const r=await req('/admin/products/'+id,{method:'DELETE'});
+    await loadProducts();
+    alert(r.message||'Produit supprimé.');
+  }catch(err){alert(err.message||'Impossible de supprimer le produit.')}
+};
+$('#deleteProductBtn')?.addEventListener('click',()=>{
+  const id=Number($('#editProductId').value);
+  const name=$('#editProductName').value||'ce produit';
+  $('#productEditModal').classList.remove('show');
+  deleteProduct(id,name);
+});
+
 let adminOrders=[];
 async function loadOrders(){try{
   const os=await req('/admin/orders');adminOrders=os;
@@ -123,7 +178,11 @@ window.printInvoice=id=>{
   const doc=`<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${invoiceNumber(o)}</title><style>body{font-family:Arial,sans-serif;color:#171717;margin:35px}header{display:flex;justify-content:space-between;border-bottom:3px solid #d4a63b;padding-bottom:20px;margin-bottom:25px}.brand{font-family:Georgia,serif;font-size:28px;font-weight:bold;color:#a87812}h1{margin:0;font-size:28px}.meta{line-height:1.6}.box{background:#f8f3ea;padding:16px;border-radius:10px;margin:18px 0}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{padding:10px;border-bottom:1px solid #ddd;text-align:left}th{background:#111;color:#fff}.total{text-align:right;font-size:22px;font-weight:bold;margin-top:22px}.status{margin-top:8px;text-align:right}.actions{margin:30px 0;text-align:center}button{padding:12px 20px;background:#111;color:#efc85d;border:0;border-radius:7px;font-weight:bold}@media print{.actions{display:none}body{margin:15mm}}</style></head><body><header><div><div class="brand">ME — MES ESSENTIELS</div><div>Guinée<br>WhatsApp : +224 621 35 32 57</div></div><div><h1>FACTURE</h1><b>${invoiceNumber(o)}</b><br>${esc(o.created_at)}</div></header><div class="box"><b>Facturé à</b><br>${esc(o.customer_name)}<br>${esc(o.phone)}${o.email?'<br>'+esc(o.email):''}<br>${esc(o.address)}, ${esc(o.city)} ${esc(o.postal_code||'')}</div><table><thead><tr><th>Article</th><th>Taille</th><th>Qté</th><th>Prix unitaire</th><th>Total</th></tr></thead><tbody>${items}</tbody></table><div class="total">TOTAL : ${money(o.total)}</div><div class="status">Paiement : <b>${esc(o.payment_status||'non payé')}</b> — Mode : ${esc(o.payment_method)}</div><div class="actions"><button onclick="window.print()">Imprimer / Enregistrer en PDF</button></div></body></html>`;
   const w=window.open('','_blank');if(!w){alert('Autorise les fenêtres pop-up pour ouvrir la facture.');return}w.document.open();w.document.write(doc);w.document.close();
 };
-let selectedCustomerId=null;
-async function loadCustomersForPasswordAdmin(){const host=$('#customersList');if(!host)return;try{const customers=await req('/admin/customers');host.innerHTML=customers.length?customers.map(c=>`<div class="admin-row"><div><strong>${esc(c.name||'Client')}</strong><span>${c.phone?'📱 +'+esc(c.phone):''}${c.email?'<br>✉️ '+esc(c.email):''}</span></div><button class="btn ghost reset-customer-password" data-id="${c.id}" data-label="${esc(c.name||c.email||'Client')}">Modifier le mot de passe</button></div>`).join(''):'<p>Aucun client enregistré.</p>';host.querySelectorAll('.reset-customer-password').forEach(btn=>btn.onclick=()=>{selectedCustomerId=btn.dataset.id;$('#clientPasswordLabel').textContent=`Client : ${btn.dataset.label}`;$('#newClientPassword').value='';$('#clientPasswordModal').classList.add('show');$('#clientPasswordModal').setAttribute('aria-hidden','false')})}catch{host.innerHTML='<p>Impossible de charger les clients.</p>'}}
-$('#closeClientPasswordModal')?.addEventListener('click',()=>{$('#clientPasswordModal').classList.remove('show');$('#clientPasswordModal').setAttribute('aria-hidden','true')});
-$('#saveClientPassword')?.addEventListener('click',async()=>{const password=$('#newClientPassword').value.trim();if(!selectedCustomerId)return;if(password.length<6){alert('Le mot de passe doit contenir au moins 6 caractères.');return}try{await req(`/admin/customers/${selectedCustomerId}/password`,{method:'POST',body:JSON.stringify({password})});alert('Mot de passe modifié avec succès.');$('#clientPasswordModal').classList.remove('show')}catch(e){alert(e.message)}});
+async function loadCustomersForPasswordAdmin(){
+  const host=$('#customersList');if(!host)return;
+  try{
+    const customers=await req('/admin/customers');
+    host.innerHTML=customers.length?customers.map(c=>`<div class="admin-row"><div><strong>${esc(c.name||'Client')}</strong><span>${c.phone?'📱 +'+esc(c.phone):''}${c.email?'<br>✉️ '+esc(c.email):''}</span></div><span class="image-help">Compte client</span></div>`).join(''):'<p>Aucun client enregistré.</p>';
+  }catch{host.innerHTML='<p>Impossible de charger les clients.</p>'}
+}
+
