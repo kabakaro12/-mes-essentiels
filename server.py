@@ -123,12 +123,12 @@ class Handler(SimpleHTTPRequestHandler):
   if p=='/api/admin/products':
    if not self.auth(True):return self.send_json({'error':'Non autorisé'},401)
    name=str(b.get('name','')).strip();category=str(b.get('category','femme')).strip().lower();image=str(b.get('image','')).strip();sizes=str(b.get('sizes','S,M,L,XL')).strip();description=str(b.get('description','')).strip()
-   try:price=float(b.get('price',0));stock=max(0,int(b.get('stock',0)))
+   try:price=int(round(float(b.get('price',0))));stock=max(0,int(b.get('stock',0)))
    except:return self.send_json({'error':'Prix ou stock invalide.'},400)
-   if not name or price<=0:return self.send_json({'error':'Nom et prix valides requis.'},400)
+   if not name or price<1000:return self.send_json({'error':'Nom requis et prix minimum de 1 000 FG.'},400)
    if category not in ('femme','homme','enfant','accessoires'):return self.send_json({'error':'Catégorie invalide.'},400)
    if not image:return self.send_json({'error':'Veuillez choisir une photo.'},400)
-   if image.startswith('data:image/') and len(image)>2500000:return self.send_json({'error':'Image trop volumineuse.'},400)
+   if image.startswith('data:image/') and len(image)>6000000:return self.send_json({'error':'Image trop volumineuse même après compression.'},400)
    con=db();cur=con.execute('INSERT INTO products(name,price,category,image,sizes,stock,description,active) VALUES(?,?,?,?,?,?,?,1)',(name,price,category,image,sizes,stock,description));con.commit();pid=cur.lastrowid;con.close();return self.send_json({'ok':True,'id':pid},201)
   if p=='/api/orders':
    u=self.auth();items=b.get('items') or []

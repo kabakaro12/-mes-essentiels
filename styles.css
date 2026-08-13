@@ -57,3 +57,6 @@
 .admin-row span{font-size:.9rem;opacity:.7}
 @media(max-width:680px){.admin-row{align-items:flex-start;flex-direction:column}.admin-row .btn{width:100%}}
 .text-button{border:0;background:transparent;color:#8a6500;text-decoration:underline;padding:10px 0;cursor:pointer;font:inherit}
+
+.stock-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0 18px}.stock-cards>div{background:#111;color:#fff;border-radius:12px;padding:14px}.stock-cards strong{display:block;color:#efc85d;font-size:24px}.stock-cards span{font-size:12px;opacity:.82}.stock-cell{display:grid;gap:6px;min-width:95px}.stock-cell input{width:82px;padding:8px;border:1px solid #ddd;border-radius:8px}.stock-low{color:#b42318}.stock-summary{margin-bottom:8px}
+@media(max-width:520px){.stock-cards{grid-template-columns:1fr 1fr}.stock-cards strong{font-size:21px}}
